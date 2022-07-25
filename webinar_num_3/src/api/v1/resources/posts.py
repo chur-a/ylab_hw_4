@@ -1,7 +1,8 @@
 from http import HTTPStatus
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_jwt_auth import AuthJWT
 
 from src.api.v1.schemas import PostCreate, PostListResponse, PostModel
 from src.services import PostService, get_post_service
@@ -16,10 +17,10 @@ router = APIRouter()
     tags=["posts"],
 )
 def post_list(
-    post_service: PostService = Depends(get_post_service),
+    post_service: PostService = Depends(get_post_service)
 ) -> PostListResponse:
     posts: dict = post_service.get_post_list()
-    if not posts:
+    if not posts["posts"]:
         # Если посты не найдены, отдаём 404 статус
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="posts not found")
     return PostListResponse(**posts)
@@ -46,9 +47,15 @@ def post_detail(
     response_model=PostModel,
     summary="Создать пост",
     tags=["posts"],
+    status_code=status.HTTP_201_CREATED
 )
 def post_create(
-    post: PostCreate, post_service: PostService = Depends(get_post_service),
+    post: PostCreate, post_service: PostService = Depends(get_post_service), Authorize: AuthJWT = Depends()
 ) -> PostModel:
-    post: dict = post_service.create_post(post=post)
+    try:
+        Authorize.jwt_required()
+    except:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    current_user = Authorize.get_jwt_subject()
+    post: dict = post_service.create_post(post, current_user)
     return PostModel(**post)

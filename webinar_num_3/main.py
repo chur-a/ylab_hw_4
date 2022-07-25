@@ -1,10 +1,11 @@
-import redis
 import uvicorn
 from fastapi import FastAPI
 
-from src.api.v1.resources import posts
+from src.api.v1.resources import posts, users
 from src.core import config
-from src.db import cache, redis_cache
+from src.db.db import engine
+import src.models.models as models
+
 
 app = FastAPI(
     # Конфигурируем название проекта. Оно будет отображаться в документации
@@ -18,29 +19,17 @@ app = FastAPI(
 )
 
 
+models.Base.metadata.create_all(bind=engine)
+
+
 @app.get("/")
 def root():
     return {"service": config.PROJECT_NAME, "version": config.VERSION}
 
 
-@app.on_event("startup")
-def startup():
-    """Подключаемся к базам при старте сервера"""
-    cache.cache = redis_cache.CacheRedis(
-        cache_instance=redis.Redis(
-            host=config.REDIS_HOST, port=config.REDIS_PORT, max_connections=10
-        )
-    )
-
-
-@app.on_event("shutdown")
-def shutdown():
-    """Отключаемся от баз при выключении сервера"""
-    cache.cache.close()
-
-
 # Подключаем роутеры к серверу
 app.include_router(router=posts.router, prefix="/api/v1/posts")
+app.include_router(router=users.router, prefix="/api/v1")
 
 
 if __name__ == "__main__":
@@ -50,6 +39,7 @@ if __name__ == "__main__":
     # запустим uvicorn сервер через python
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=8000,
+        reload=True
     )
