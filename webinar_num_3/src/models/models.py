@@ -5,8 +5,6 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-__all__ = ("Post", "User")
-
 
 class Post(Base):
     __tablename__ = 'post'
