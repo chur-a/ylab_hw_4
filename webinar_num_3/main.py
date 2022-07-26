@@ -3,8 +3,6 @@ from fastapi import FastAPI
 
 from src.api.v1.resources import posts, users
 from src.core import config
-from src.db.db import engine
-import src.models.models as models
 
 
 app = FastAPI(
@@ -17,9 +15,6 @@ app = FastAPI(
     # Адрес документации в формате OpenAPI
     openapi_url="/api/openapi.json",
 )
-
-
-models.Base.metadata.create_all(bind=engine)
 
 
 @app.get("/")
@@ -39,7 +34,6 @@ if __name__ == "__main__":
     # запустим uvicorn сервер через python
     uvicorn.run(
         "main:app",
-        host="127.0.0.1",
+        host="0.0.0.0",
         port=8000,
-        reload=True
     )
